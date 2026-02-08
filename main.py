@@ -1,6 +1,6 @@
 import sys
 from scraper import scrape_problem
-from agent import get_ai_solution, extract_code, get_second_opinion
+from agent import get_ai_solution, extract_code, get_second_opinion 
 from sandbox import run_in_docker
 
 def grandmaster_ai_loop(url):

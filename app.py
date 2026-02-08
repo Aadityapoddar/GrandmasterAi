@@ -2,8 +2,9 @@ import streamlit as st
 import time
 import sys
 from scraper import scrape_problem
-from agent import get_ai_solution, extract_code, get_second_opinion
+from agent import get_ai_solution, extract_code, get_second_opinion, get_brute_force_solution, get_test_generator
 from sandbox import run_in_docker
+import subprocess
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -117,21 +118,80 @@ def main():
                     else:
                         st.error(f"Could not solve {sample_name} after {max_retries} attempts.")
                         st.stop()
-
-        # 4. FINAL VERDICT
+        # --- Stage 4: Official Samples Passed ---
         st.divider()
-        st.balloons()
         st.success("### 🏆 ALL SAMPLES PASSED!")
-        st.markdown("Final Optimized C++ Code:")
+        
+        # --- Stage 5: Mandatory Differential Stress Test ---
+        st.subheader("🔥 Stage 5: Autonomous Stress Testing")
+        
+        with st.status("🚀 Commencing Stress Test (Mandatory)...", expanded=True) as stress_status:
+            # A. Prepare the Oracle and Generator
+            st.write("Generating Brute Force Oracle...")
+            brute_code = get_brute_force_solution(data)
+            
+            st.write("Generating Random Test Case Generator...")
+            gen_script = get_test_generator(data)
+            
+            num_trials = 20
+            fail_found = False
+            
+            for i in range(num_trials):
+                st.write(f"Running Trial {i+1}/{num_trials}...")
+                
+                # 1. Generate random input
+                gen_proc = subprocess.run([sys.executable, "-c", gen_script], capture_output=True, text=True)
+                random_input = gen_proc.stdout
+
+                # 2. Compare Outputs
+                oracle_out = run_in_docker(brute_code, random_input, time_limit=10)
+                agent_out = run_in_docker(active_code, random_input, data['time_limit'])
+                
+                if oracle_out.strip() != agent_out.strip():
+                    st.error(f"❌ Mismatch Found on Trial {i+1}!")
+                    
+                    # 3. Get Critic's Audit
+                    error_report = f"Input: {random_input}\nExpected (Oracle): {oracle_out}\nActual (Agent): {agent_out}"
+                    with st.spinner("Critic is auditing the logic gap..."):
+                        analysis = get_second_opinion(data, active_code, error_report)
+                    
+                    # 4. Refine with Previous Code Context
+                    refine_feedback = f"""
+                    THE PREVIOUS OPTIMIZED CODE FAILED AN EDGE CASE:
+                    ```cpp
+                    {active_code}
+                    ```
+                    FAILURE REPORT: {error_report}
+                    CRITIC'S LOGIC ANALYSIS: {analysis}
+                    
+                    INSTRUCTION: Rewrite the solution to handle this case.
+                    """
+                    
+                    with st.spinner("Architect is fixing the edge case..."):
+                        new_response = get_ai_solution(data, feedback=refine_feedback)
+                        active_code = extract_code(new_response)
+                    
+                    fail_found = True
+                    st.warning("🔄 Code refined. Please restart solving to verify new logic.")
+                    break 
+
+            if not fail_found:
+                st.success(f"✅ All {num_trials} trials matched the Oracle!")
+                stress_status.update(label="Stress Test: 100% Robust", state="complete")
+
+        # --- FINAL EXPORT ---
+        st.divider()
+        st.markdown("### 📥 Final Verified Code")
         st.code(active_code, language="cpp")
         
         st.download_button(
-            label="Download Solution (.cpp)",
+            label="Download Verified .cpp",
             data=active_code,
-            file_name=f"solution_{data['title'].replace(' ', '_')}.cpp",
+            file_name=f"grandmaster_{data['title'].replace(' ', '_')}.cpp",
             mime="text/x-c++src",
             key="download_final"
         )
+        
 
 if __name__ == "__main__":
     main()

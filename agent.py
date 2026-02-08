@@ -34,22 +34,26 @@ def get_ai_solution(problem_data, feedback=None):
     
     return response.text
 
-def extract_code(ai_response):
+def extract_code(ai_response, language="cpp"):
     """
-    Extracts the C++ code block from the AI's Markdown response.
+    Extracts a code block of a specific language from the AI's Markdown response.
+    Defaults to 'cpp' but can be overridden (e.g., 'python').
     """
-    cpp_pattern = r"```cpp\s*\n?(.*?)\n?```"
-    match = re.search(cpp_pattern, ai_response, re.DOTALL | re.IGNORECASE)
+    # 1. Look for specific language block (e.g., ```cpp or ```python)
+    pattern = rf"```{language}\s*\n?(.*?)\n?```"
+    match = re.search(pattern, ai_response, re.DOTALL | re.IGNORECASE)
     
     if match:
         return match.group(1).strip()
     
+    # 2. Fallback: Look for any generic code block
     generic_pattern = r"```\s*\n?(.*?)\n?```"
     match = re.search(generic_pattern, ai_response, re.DOTALL)
     
     if match:
         return match.group(1).strip()
     
+    # 3. Final Fallback: Return the raw response if no blocks are found
     return ai_response.strip()
 
 def get_second_opinion(problem_data, failed_code, error_report):
@@ -64,3 +68,26 @@ def get_second_opinion(problem_data, failed_code, error_report):
     """
     response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
     return response.text
+
+def get_brute_force_solution(problem_data):
+    prompt = f"""
+    Write a simple, 100% correct Brute Force C++ solution for this problem.
+    Ignore time limits ($O(N^2)$ or $O(2^N)$ is fine). 
+    Focus ONLY on perfect logic.
+    
+    PROBLEM: {problem_data['description']}
+    """
+    response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+    return extract_code(response.text)
+
+def get_test_generator(problem_data):
+    prompt = f"""
+    Write a Python 3 script that generates ONE random valid test case for this problem.
+    Use the 'random' module.
+    
+    CONSTRAINTS: {problem_data['input_spec']}
+    
+    Output ONLY the Python code in ```python blocks.
+    """
+    response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+    return extract_code(response.text, "python")
