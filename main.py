@@ -1,68 +1,66 @@
 import sys
 from scraper import scrape_problem
+from agent import get_ai_solution, extract_code, get_second_opinion
 from sandbox import run_in_docker
 
-def orchestrate(url, cpp_code):
-    # Step 1: Get the 'Eyes' to see the problem
-    print(f"[*] Scraping problem data from: {url}")
+def grandmaster_ai_loop(url):
     data = scrape_problem(url)
-    
-    if not data or "samples" not in data:
-        print("[!] Error: Could not retrieve sample cases.")
-        return
+    raw_response = get_ai_solution(data)
+    cpp_code = extract_code(raw_response)
 
     samples = data['samples']
-    t_limit = data['time_limit']
-    m_limit = data['memory_limit']
+    current_sample_idx = 0
+    max_tries_per_bug = 3
+    tries_on_current_bug = 0
 
-    print(f"[*] Problem: {data.get('title', 'Target Found')}")
-    print(f"[*] Limits: {t_limit}s / {m_limit}")
-    print(f"[*] Found {len(samples)} samples. Starting evaluation...\n")
+    while current_sample_idx < len(samples):
+        sample = samples[current_sample_idx]
+        print(f"[*] Testing Sample {current_sample_idx + 1}/{len(samples)}...", end=" ", flush=True)
 
-    passed_count = 0
-
-    # Step 2: Loop through each sample case
-    for idx, sample in enumerate(samples):
-        input_data = sample['input']
-        expected_output = sample['output'].strip()
-
-        print(f"[Test {idx+1}] Running...", end=" ", flush=True)
-
-        # Step 3: Run the code in our 'Vault'
-        # We pass the real time/memory limits we just scraped!
-        actual_output = run_in_docker(cpp_code, input_data, t_limit, m_limit)
-
-        # Step 4: Verification Logic
-        if actual_output == expected_output:
+        actual = run_in_docker(cpp_code, sample['input'], data['time_limit'])
+        
+        if actual.strip() == sample['output'].strip():
             print("✅ PASSED")
-            passed_count += 1
+            current_sample_idx += 1  
+            tries_on_current_bug = 0  
         else:
-            print("❌ FAILED")
-            print(f"    -- Input --\n{input_data}")
-            print(f"    -- Expected --\n{expected_output}")
-            print(f"    -- Actual --\n{actual_output}\n")
+            tries_on_current_bug += 1
+            print(f"❌ FAILED (Try {tries_on_current_bug}/{max_tries_per_bug})")
 
-    # Final Verdict
-    print("-" * 30)
-    if passed_count == len(samples):
-        print(f"OVERALL RESULT: ACCEPTED ({passed_count}/{len(samples)}) 🏆")
-    else:
-        print(f"OVERALL RESULT: WRONG ANSWER ({passed_count}/{len(samples)})")
+            if tries_on_current_bug >= max_tries_per_bug:
+                print(f"\n[!] Stalled on Sample {current_sample_idx + 1}. Architect couldn't fix it.")
+                return False
 
+            
+            print(f"[*] Architect is debugging Sample {current_sample_idx + 1}...")
+            
+            error_report = (
+                f"Your previous code failed on a test case.\n"
+                f"Input provided: {sample['input']}\n"
+                f"Expected Output: {sample['output']}\n"
+                f"Your Code's Output: {actual}\n"
+                f"PREVIOUS CODE: ```cpp {cpp_code}```\n"
+                f"Please fix the logic and provide the full corrected C++ code."
+            )
+            
+            structured_feedback = f"""
+            ### EXECUTION FAILURE
+            {error_report}
+
+            ### CRITIC'S LOGIC AUDIT
+            {get_second_opinion(data, cpp_code, error_report)}
+
+            ### INSTRUCTION
+            Address the Critic's points and provide a corrected, full C++ solution.
+            """
+            # Get new code from the AI
+            new_response = get_ai_solution(data, feedback=(structured_feedback))
+            cpp_code = extract_code(new_response)
+
+    print("\n🏆 VERDICT: ALL SAMPLES PASSED! Logic is fully verified.")
+    print(cpp_code)
+    return True
 if __name__ == "__main__":
-    # Test URL: Watermelon (4A)
-    target_url = "https://codeforces.com/problemset/problem/4/A"
     
-    # Test Code: A solution that handles the '2' case correctly
-    test_solution = """
-    #include <iostream>
-    using namespace std;
-    int main() {
-        int w; cin >> w;
-        if (w > 2 && w % 2 == 0) cout << "YES";
-        else cout << "NO";
-        return 0;
-    }
-    """
-    
-    orchestrate(target_url, test_solution)
+    target_url = "https://codeforces.com/problemset/problem/2185/D"
+    grandmaster_ai_loop(target_url)

@@ -17,3 +17,5 @@ cache/
 
 #secrets
 .env
+
+venv/

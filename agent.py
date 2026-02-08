@@ -1,4 +1,5 @@
 import os
+import re
 from dotenv import load_dotenv
 from google import genai
 
@@ -7,7 +8,7 @@ load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def get_ai_solution(problem_data):
+def get_ai_solution(problem_data, feedback=None):
     prompt = f"""
     You are a Competitive Programming Grandmaster. 
     Solve this problem with a highly optimized C++ solution.
@@ -18,6 +19,10 @@ def get_ai_solution(problem_data):
     
     Briefly explain the logic, then provide the code wrapped in ```cpp tags.
     """
+    if feedback:
+        prompt += f"\n--- REVISION NEEDED ---\n{feedback}\nFocus on fixing this specific error."
+    else:
+        prompt += "\nProvide the initial optimized C++ solution."
 
     print("[*] GrandmasterAi Architect is thinking...")
     
@@ -28,7 +33,6 @@ def get_ai_solution(problem_data):
     )
     
     return response.text
-import re
 
 def extract_code(ai_response):
     """
@@ -47,11 +51,16 @@ def extract_code(ai_response):
         return match.group(1).strip()
     
     return ai_response.strip()
-if __name__ == "__main__":
+
+def get_second_opinion(problem_data, failed_code, error_report):
+    prompt = f"""
+    You are a Code Reviewer. The following C++ code failed a test case.
     
-    test_data = {
-        "title": "Easy Addition",
-        "description": "Given two numbers A and B, output their sum.",
-        "input_spec": "A and B are integers < 10^9"
-    }
-    print(extract_code(get_ai_solution(test_data)))
+    PROBLEM: {problem_data['description']}
+    FAILED CODE: {failed_code}
+    ERROR: {error_report}
+    
+    Do NOT write code yet. Explain in 3 sentences exactly what logic is missing.
+    """
+    response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+    return response.text

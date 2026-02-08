@@ -1,8 +1,10 @@
 import os
 import json
-import requests
+from curl_cffi import requests
 from bs4 import BeautifulSoup
 import re
+import time
+import random
 
 # Ensure a cache directory exists
 CACHE_DIR = "cache"
@@ -21,20 +23,37 @@ def get_cache_path(url):
 def scrape_problem(url):
     cache_path = get_cache_path(url)
 
-    # 1. Check if we already have this problem cached
     if os.path.exists(cache_path):
         print(f"[*] Cache Hit: Loading {url} from local storage...")
         with open(cache_path, "r") as f:
             return json.load(f)
 
-    # 2. If not cached, scrape it
+    
     print(f"[*] Cache Miss: Fetching {url} from Codeforces...")
+    user_agents = [
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/118.0'
+    ]
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': random.choice(user_agents),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://codeforces.com/problemset',
+        'DNT': '1', # Do Not Track
+        'Connection': 'keep-alive',
     }
 
+    print("[*] Mimicking human behavior (pausing)...")
+    time.sleep(random.uniform(3, 7))
+
     try:
-        response = session.get(url, headers=headers, timeout=10)
+        print("[*] Impersonating Chrome to bypass 403...")
+        response = requests.get(
+            url, 
+            impersonate="chrome110", # This is the magic line
+            timeout=15
+        )
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         
