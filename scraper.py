@@ -14,7 +14,16 @@ def scrape_problem(url):
         return f"Error fetching URL: {e}"
 
     soup = BeautifulSoup(response.content, 'html.parser')
+    problem_node = soup.find('div', class_='problem-statement')
 
+    description_div = problem_node.find('div', class_='header').find_next_sibling('div')
+    description = description_div.get_text(separator="\n").strip()
+
+    
+    input_spec = problem_node.find('div', class_='input-specification').get_text(separator="\n").strip()
+
+    
+    output_spec = problem_node.find('div', class_='output-specification').get_text(separator="\n").strip()
     # 1. Extract Metadata using the 'Diagnostic' approach
     header = soup.find('div', class_='header')
     
@@ -37,22 +46,19 @@ def scrape_problem(url):
         samples.append({"input": in_data, "output": out_data})
 
     return {
+        "description": description,
+        "input_spec": input_spec,
+        "output_spec": output_spec,
         "time_limit": time_limit,
         "memory_limit": memory_limit,
         "samples": samples
     }
 
 if __name__ == "__main__":
-    # Test with Watermelon (4A)
-    test_url = "https://codeforces.com/problemset/problem/4/A"
-    data = scrape_problem(test_url)
+    url = "https://codeforces.com/problemset/problem/4/A"
+    data = scrape_problem(url)
     
-    print(f"--- Metadata ---")
-    print(f"Time Limit: {data['time_limit']}s")
-    print(f"Memory Limit: {data['memory_limit']}")
-    print(f"\n--- Found {len(data['samples'])} Samples ---")
-    
-    for idx, s in enumerate(data['samples']):
-        print(f"Sample {idx+1} Input: {s['input']}")
-        print(f"Sample {idx+1} Expected Output: {s['output']}")
-        print("-" * 20)
+    print(f"Time/Memory: {data['time_limit']} / {data['memory_limit']}")
+    print(f"\n[DESCRIPTION]\n{data['description'][:200]}...") # Just first 200 chars
+    print(f"\n[CONSTRAINTS]\n{data['input_spec']}")
+    print(f"\n[SAMPLES] Found {len(data['samples'])} cases.")
