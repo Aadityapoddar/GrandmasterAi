@@ -1,0 +1,13 @@
+# Local temporary files
+temp_sol.cpp
+input.txt
+output.txt
+solution.out
+sol
+
+# Python
+__pycache__/
+*.pyc
+
+# Mac system files
+.DS_Store
