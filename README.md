@@ -1,6 +1,6 @@
 # 🏆 GrandmasterAi: An Agentic Framework for Algorithmic Verification
 
-**GrandmasterAi** is an advanced, multi-agent AI system designed to serve as an automated "Peer Reviewer" for Competitive Programming (CP) and complex algorithmic development. By simulating the workflow of a high-level software engineer—from requirement analysis to rigorous differential testing—the system helps developers identify subtle logic flaws and optimize implementations through autonomous, localized feedback loops.
+**GrandmasterAi** is an advanced, multi-agent AI framework designed as an automated R&D partner for competitive programmers and software engineers. By orchestrating a specialized hierarchy—including an Architect for high-performance synthesis and an Auditor for root-cause analysis—the system simulates an elite engineering review process. Rather than merely providing answers, GrandmasterAi prioritizes rigorous verification; it leverages a Dockerized Sandbox and autonomous Differential Testing to help developers bridge the gap between brute-force logic and optimized C++ implementations. This recursive loop of stress-testing acts as a high-fidelity "second set of eyes," helping coders resolve subtle logic flaws and master complex algorithmic constraints in a controlled, educational environment.
 
 ---
 
@@ -57,4 +57,5 @@ Developed as a "Proof of Work" for high-level software engineering, **Grandmaste
 * Verify logic against a brute-force baseline.
 * Automatically discover subtle edge cases.
 * Explore highly optimized implementations of complex algorithms.
+
 
