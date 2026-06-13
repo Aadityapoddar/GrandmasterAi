@@ -1,0 +1,187 @@
+/* ── Layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* ── Left panel ── */
+.left {
+  border-right: 1px solid var(--border);
+  padding: 1.75rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+  min-height: 100vh;
+}
+
+/* ── Right panel ── */
+.right {
+  padding: 1.75rem 2rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Brand ── */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.brandIcon { font-size: 1.4rem; color: var(--accent); }
+
+.brandName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.brandSub {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+
+.apiLink {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+.apiLink:hover { color: var(--accent); text-decoration: none; }
+
+/* ── Input ── */
+.inputRow {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.urlInput {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.urlInput:focus       { border-color: var(--accent); }
+.urlInput:disabled    { opacity: 0.5; }
+.urlInput::placeholder { color: var(--muted); }
+
+.solveBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius);
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+}
+.solveBtn:hover    { opacity: 0.88; }
+.solveBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.cancelBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius);
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  min-width: 72px;
+}
+.cancelBtn:hover { border-color: var(--red); color: var(--red); }
+
+.spinner {
+  width: 13px; height: 13px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Status ── */
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.statusPill {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.statusPill.queued    { background: #fbbf2415; color: var(--yellow); }
+.statusPill.running   { background: #7c6af720; color: var(--accent); }
+.statusPill.completed { background: #4ade8015; color: var(--green); }
+.statusPill.failed    { background: #f8717115; color: var(--red); }
+.statusPill.cancelled { background: #6b6b8015; color: var(--muted); }
+
+.jobId {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+/* ── Log ── */
+.logArea {
+  height: 380px;
+  flex-shrink: 0;
+}
+
+/* ── Error / cancelled ── */
+.errorBox {
+  background: #f8717110;
+  border: 1px solid #f8717140;
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  color: var(--red);
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.cancelledBox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .right  { position: static; height: auto; }
+}

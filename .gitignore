@@ -19,3 +19,7 @@ cache/
 .env
 
 venv/
+
+scripts/
+
+data/
