@@ -100,7 +100,7 @@ The fix: before searching, ask the LLM to write a short hypothetical editorial h
 If the Critic just rewrote the code, the user learns nothing. It is explicitly prompted to produce exactly 3 sentences of plain-language reasoning with no code forcing it to name the conceptual gap. That explanation is the actual learning artifact, surfaced as a card in the UI.
 
 ### 3. Editorial chunking as problem-approach pairs
-Each editorial is embedded as `PROBLEM: <statement>\nAPPROACH: <tutorial>`. The statement captures the trigger pattern what kind of problem signals this technique. The tutorial captures why. Together they create a vector that matches on both the *when* and the *why*, which is what a learner actually needs.
+Each editorial is stored as a combined chunk: the problem statement followed by the tutorial explanation. The reason is that the statement tells the model what kind of problem this technique applies to, and the tutorial tells it how the technique works. Storing them together means when a new problem comes in, the retrieval finds editorials that match on both — not just technique similarity, but also problem structure similarity.
 
 ### 4. Differential testing for stress testing
 The stress tester generates a brute-force reference solution and a random test case generator via the LLM, then compares both solutions across hundreds of random inputs. When outputs differ, a counterexample is found automatically no manual edge case writing needed. This is the same technique used in production software testing and it teaches edge case thinking in a concrete, visible way.
@@ -222,9 +222,7 @@ Open `http://localhost:3000`.
 
 ## Motivation
 
-I wanted to explore whether a RAG pipeline could be used to build something genuinely useful for learning, a system that makes the *reasoning* behind competitive programming visible.
-
-The retrieval piece was the interesting part. Tag-based search tells you what technique a problem uses. Semantic search over editorials with HyDE bridging the vocabulary gap tells you *why* that technique fits and what in the problem structure signals it. That is a meaningfully different kind of information for a learner.
+I wanted to explore whether a RAG pipeline could be used to build something genuinely useful for learning, a system that makes the reasoning behind competitive programming visible. Competitive programming felt like a good domain for this as problems have objective correctness criteria, and there is a rich ecosystem of editorials to build a knowledge base from.
 
 
 ---
