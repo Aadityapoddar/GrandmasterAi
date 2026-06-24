@@ -2,7 +2,7 @@ import uuid
 import asyncio
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Path
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, AnyUrl
+from pydantic import BaseModel
 from backend.main import run_pipeline,run_stress_test
 from backend.state import jobs
 
@@ -26,10 +26,12 @@ class StressTestRequest(BaseModel):
 def solve(request: SolveRequest, background_tasks: BackgroundTasks):
     job_id = str(uuid.uuid4())
     jobs[job_id] = {
-        "status": "queued",
-        "logs": [],
-        "result": None,
-        "error": None,
+        "status":         "queued",
+        "logs":           [],
+        "result":         None,
+        "error":          None,
+        "problem_data":   None,
+        "critic_reviews": [],
     }
     background_tasks.add_task(run_pipeline, job_id, request.url)
     return SolveResponse(job_id=job_id, message="Job queued. Use /solve/{job_id}/status to track progress.")

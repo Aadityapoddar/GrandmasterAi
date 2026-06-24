@@ -3,7 +3,8 @@ from backend.agent import get_ai_solution, extract_code, get_second_opinion
 from backend.sandbox import run_in_docker
 from backend.state import jobs, log
 from backend.retrieve import retrieve_similar_approaches
-import subprocess
+from backend.stress_test import run_stress_test as _run_stress_test
+from backend.stress_test import is_cancelled
 
 def run_pipeline(job_id,url):
     try:
@@ -102,89 +103,5 @@ def sample_test(job_id,data,cpp_code):
             cpp_code = extract_code(new_response)
     return cpp_code
 
-
 def run_stress_test(stress_job_id: str, solve_job_id: str, num_tests: int):
-    from backend.agent import get_brute_force_solution, get_test_generator, extract_code, get_ai_solution, get_second_opinion
-    from backend.sandbox import run_in_docker
-    from backend.state import log
-
-    try:
-        jobs[stress_job_id]["status"] = "running"
-
-        solve_job = jobs[solve_job_id]
-        cpp_code  = solve_job["result"]
-        data      = solve_job["problem_data"]
-
-        log(stress_job_id, "🐢 Generating brute-force solution...")
-        brute_code = get_brute_force_solution(data)
-        log(stress_job_id, "✅ Brute-force ready.")
-
-        log(stress_job_id, "🎲 Generating random test case generator...")
-        generator_code = get_test_generator(data)
-        log(stress_job_id, "✅ Generator ready.")
-
-        log(stress_job_id, f"🔁 Running {num_tests} random tests...")
-
-        for i in range(1, num_tests + 1):
-            try:
-                gen_result = subprocess.run(
-                    ["python3", "-c", generator_code],
-                    capture_output=True, text=True, timeout=5
-                )
-                test_input = gen_result.stdout.strip()
-            except subprocess.TimeoutExpired:
-                log(stress_job_id, f"⚠️  Test {i}: generator timed out, skipping.")
-                continue
-
-            if not test_input:
-                continue
-
-            fast_out  = run_in_docker(cpp_code,   test_input, data["time_limit"])
-            brute_out = run_in_docker(brute_code, test_input, data["time_limit"])
-
-            if fast_out.strip() == brute_out.strip():
-                if i % 10 == 0:
-                    log(stress_job_id, f"✅ {i}/{num_tests} tests passed...")
-                continue
-
-            log(stress_job_id, f"❌ Counterexample found on test {i}!")
-            log(stress_job_id, f"📥 Input: {test_input}")
-            log(stress_job_id, f"⚡ Got: {fast_out.strip()} | Expected: {brute_out.strip()}")
-
-            data["samples"].append({
-                "input":  test_input,
-                "output": brute_out.strip()
-            })
-
-            log(stress_job_id, "Added the failing test case to the sample test cases for the problem")
-            cpp_code=sample_test(stress_job_id,data,cpp_code)
-
-            if jobs[stress_job_id]["status"] == "failed":
-                return
-            
-            jobs[solve_job_id]["result"] = cpp_code
-
-            jobs[stress_job_id]["status"] = "completed"
-            jobs[stress_job_id]["result"] = {
-                "verdict":      "BUG_FOUND_AND_FIXED",
-                "test_number":  i,
-                "input":        test_input,
-                "fast_output":  fast_out.strip(),
-                "brute_output": brute_out.strip(),
-            }
-            return
-
-        log(stress_job_id, f"🏆 All {num_tests} tests passed!")
-        jobs[stress_job_id]["status"] = "completed"
-        jobs[stress_job_id]["result"] = {
-            "verdict":   "PASSED",
-            "tests_run": num_tests,
-        }
-
-    except Exception as e:
-        log(stress_job_id, f"💥 Stress test error: {str(e)}")
-        jobs[stress_job_id]["status"] = "failed"
-        jobs[stress_job_id]["error"]  = str(e)
-
-def is_cancelled(job_id: str) -> bool:
-    return jobs.get(job_id, {}).get("status") == "cancelled"
+    _run_stress_test(stress_job_id, solve_job_id, num_tests)
