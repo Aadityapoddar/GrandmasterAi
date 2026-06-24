@@ -52,21 +52,21 @@ def run_stress_test(stress_job_id: str, solve_job_id: str, num_tests: int):
         data      = solve_job["problem_data"]
 
         # Brute force oracle 
-        log(stress_job_id, "🐢 Generating brute-force solution...")
+        log(stress_job_id, "🐢 Generating brute-force solution")
         brute_code = get_brute_force_solution(data)
         log(stress_job_id, "✅ Brute-force ready.")
         if is_cancelled(stress_job_id):
             return
 
         #  Random test generator
-        log(stress_job_id, "🎲 Generating random test case generator...")
+        log(stress_job_id, "🎲 Generating random test case generator.")
         generator_code = get_test_generator(data)
         log(stress_job_id, "✅ Generator ready.")
         if is_cancelled(stress_job_id):
             return
 
         # Generate all test inputs upfront
-        log(stress_job_id, f"🔁 Generating {num_tests} random test cases...")
+        log(stress_job_id, f"🔁 Generating {num_tests} random test cases.")
         test_inputs = generate_test_inputs(generator_code, num_tests, stress_job_id)
         log(stress_job_id, f"✅ Generated {len(test_inputs)} valid test cases.")
 
@@ -76,7 +76,7 @@ def run_stress_test(stress_job_id: str, solve_job_id: str, num_tests: int):
             return
 
         # Run tests in parallel
-        log(stress_job_id, f"⚙️  Running tests across {MAX_WORKERS} parallel workers...")
+        log(stress_job_id, f"⚙️  Running tests across {MAX_WORKERS} parallel workers.")
 
         found_bug   = threading.Event()
         bug_result  = {}
@@ -99,7 +99,7 @@ def run_stress_test(stress_job_id: str, solve_job_id: str, num_tests: int):
                 with lock:
                     completed += 1
                     if completed % 10 == 0 and not found_bug.is_set():
-                        log(stress_job_id, f"✅ {completed}/{len(test_inputs)} tests completed...")
+                        log(stress_job_id, f"✅ {completed}/{len(test_inputs)} tests completed.")
 
                 if found_bug.is_set():
                     for f in futures:
