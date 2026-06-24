@@ -58,14 +58,14 @@ Every step produces something the user can read, not just a silent state transit
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     User Interface (React)                      │
+│                     User Interface (React)                       │
 │   Left: Agent Log + Critic Review Cards                         │
 │   Right: C++ Solution Panel + Stress Test Controls              │
 └──────────────────────┬──────────────────────────────────────────┘
                        │ POST /solve
 ┌──────────────────────▼──────────────────────────────────────────┐
-│                     FastAPI Backend                             │
-│              (async job queue, SSE streaming)                   │
+│                     FastAPI Backend                              │
+│              (async job queue, SSE streaming)                    │
 └──┬───────────────────┬─────────────────────┬────────────────────┘
    │                   │                     │
    ▼                   ▼                     ▼
@@ -81,10 +81,18 @@ Every step produces something the user can read, not just a silent state transit
                        │           │ Critic              │
                 ┌──────▼──────┐    │   explains failure  │
                 │   Qdrant    │    │                     │
-                │  3,500+     │    │ Stress Tester       │
-                │  editorial  │    │   differential      │
-                │  embeddings │    │   testing           │
-                └─────────────┘    └─────────────────────┘
+                │  3,500+     │    └─────────────────────┘
+                │  editorial  │
+                │  embeddings │    ┌─────────────────────┐
+                └─────────────┘    │  Stress Tester      │
+                                   │  (parallelized)     │
+                                   │                     │
+                                   │  Brute-force oracle │
+                                   │  + random generator │
+                                   │  → 6 worker threads │
+                                   │  → first bug wins,  │
+                                   │    rest cancelled   │
+                                   └─────────────────────┘
 ```
 
 ---
@@ -105,23 +113,27 @@ Each editorial is stored as a combined chunk: the problem statement followed by 
 ### 4. Differential testing for stress testing
 The stress tester generates a brute-force reference solution and a random test case generator via the LLM, then compares both solutions across hundreds of random inputs. When outputs differ, a counterexample is found automatically no manual edge case writing needed. This is the same technique used in production software testing and it teaches edge case thinking in a concrete, visible way.
 
-### 5. Sandboxed code execution
+### 5. Parallelized stress testing with early termination
+Running hundreds of test cases sequentially each requiring two Docker container spins is slow. All test inputs are generated upfront, then run concurrently across a thread pool of 6 workers. A shared `threading.Event` signals every worker the moment one of them finds a counterexample, so in-flight tests that haven't started yet get cancelled immediately instead of wasting compute on a bug that's already been found. This cut stress test runtime significantly compared to the sequential version.
+
+### 6. Sandboxed code execution
 All generated C++ runs inside an isolated Docker container with strict time limits. The host filesystem is never touched.
 
 ---
 
 ## Tech Stack
-
+ 
 | Layer | Technology |
 |-------|-----------|
 | LLM | Gemini 2.5 Flash |
 | Embeddings | gemini-embedding-2 (3072 dimensions) |
 | Vector Database | Qdrant |
 | Backend | FastAPI + Python 3.13 |
+| Concurrency | ThreadPoolExecutor (parallelized stress testing) |
 | Frontend | React 18 + Vite |
 | Code Execution | Docker (sandboxed) |
 | Editorial Dataset | CREST — 3,546 Codeforces problems (rated 1200–2000) |
-
+ 
 ---
 
 ## Project Structure
@@ -132,7 +144,8 @@ GrandmasterAI/
 │   ├── agent.py        
 │   ├── api.py          
 │   ├── ingest.py       
-│   ├── main.py         
+│   ├── main.py
+│   ├── stress_test.py    
 │   ├── retrieve.py     
 │   ├── sandbox.py      
 │   ├── scraper.py      
