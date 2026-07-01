@@ -58,14 +58,14 @@ Every step produces something the user can read, not just a silent state transit
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     User Interface (React)                       │
+│                     User Interface (React)                      │
 │   Left: Agent Log + Critic Review Cards                         │
 │   Right: C++ Solution Panel + Stress Test Controls              │
 └──────────────────────┬──────────────────────────────────────────┘
                        │ POST /solve
 ┌──────────────────────▼──────────────────────────────────────────┐
-│                     FastAPI Backend                              │
-│              (async job queue, SSE streaming)                    │
+│                     FastAPI Backend                             │
+│              (async job queue, SSE streaming)                   │
 └──┬───────────────────┬─────────────────────┬────────────────────┘
    │                   │                     │
    ▼                   ▼                     ▼
